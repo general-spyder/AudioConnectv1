@@ -229,7 +229,7 @@ void DeviceOutput::audioDeviceAboutToStart (juce::AudioIODevice* d)
 
 void DeviceOutput::audioDeviceStopped() { numOutputs = 0; }
 
-void DeviceOutput::audioDeviceIoCallbackWithContext (const float* const*, int, float* const* out,
+void DeviceOutput::audioDeviceIOCallbackWithContext (const float* const*, int, float* const* out,
                                                     int numOut, int n,
                                                     const juce::AudioIODeviceCallbackContext&)
 {
