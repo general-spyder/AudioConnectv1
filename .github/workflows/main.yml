@@ -36,22 +36,32 @@ jobs:
         shell: pwsh
         run: cmake --build build --config Release --parallel 2
 
+   
       - name: Collect Windows outputs
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
-          $exeDir = Join-Path (Resolve-Path artifacts).Path 'Standalone'
-          $vstDir = Join-Path (Resolve-Path artifacts).Path 'VST3'
-          New-Item -ItemType Directory -Force -Path $exeDir, $vstDir | Out-Null
-          $files = @(Get-ChildItem build -Recurse -File -Filter *.exe | Where-Object { $_.FullName -match '[\\/]Release[\\/]' -and $_.FullName -notmatch '[\\/]CMakeFiles[\\/]' })
-          $bundles = @(Get-ChildItem build -Recurse -Directory -Filter *.vst3 | Where-Object { $_.FullName -match '[\\/]Release[\\/]' })
-          $plugins = @(Get-ChildItem build -Recurse -File -Filter *.vst3 | Where-Object { $_.FullName -match '[\\/]Release[\\/]' })
-          foreach ($file in $files) { Copy-Item -LiteralPath $file.FullName -Destination $exeDir -Force }
-          foreach ($bundle in $bundles) { Copy-Item -LiteralPath $bundle.FullName -Destination (Join-Path $vstDir $bundle.Name) -Recurse -Force }
-          foreach ($plugin in $plugins) { Copy-Item -LiteralPath $plugin.FullName -Destination $vstDir -Force }
-          Write-Host 'Collected outputs:'
-          Get-ChildItem artifacts -Recurse | Select-Object FullName
-          if ($files.Count -eq 0 -and $bundles.Count -eq 0 -and $plugins.Count -eq 0) { throw 'No standalone EXE or VST3 outputs found in the Release build.' }
+          New-Item -ItemType Directory -Force -Path artifacts/Standalone | Out-Null
+          New-Item -ItemType Directory -Force -Path artifacts/VST3 | Out-Null
+
+          $apps = @(Get-ChildItem -Path build -Recurse -File -Filter "*.exe" |
+            Where-Object { $_.FullName -match '[\\/]Standalone[\\/]' })
+
+          foreach ($app in $apps) {
+            Copy-Item -LiteralPath $app.FullName `
+              -Destination artifacts/Standalone/ -Force
+          }
+
+          $plugins = @(Get-ChildItem -Path build -Recurse -Directory -Filter "*.vst3" |
+            Where-Object { $_.FullName -match '[\\/]VST3[\\/]' })
+
+          foreach ($plugin in $plugins) {
+            Copy-Item -LiteralPath $plugin.FullName `
+              -Destination artifacts/VST3/ -Recurse -Force
+          }
+
+          if ($apps.Count -eq 0 -and $plugins.Count -eq 0) {
+            throw "No Standalone EXE or VST3 plugin found."
+          }
 
       - name: Upload Windows builds
         uses: actions/upload-artifact@v4
